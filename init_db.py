@@ -26,7 +26,7 @@ def init_db():
                 player TEXT,
                 answer INT,
                 quest INT,
-                points TEXT
+                points TEXT DEFAULT 0,0
                 )''')
 
 
