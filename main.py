@@ -118,7 +118,6 @@ async def process_startgame_command(message: types.Message):
         sleep(5)
         for idx in range(len(quests)):
             question = get_table('questions', ['id', str(quests[idx])])[0][2]
-            print('\n\n\n\n\n\n\n',question,'\n\n\n\n')
             msg = text('Внимание, вопрос:', italic(question), sep='\n')
             answer_list = answers[idx][2].split('|')
             player_list = answers[idx][1].split('!')
