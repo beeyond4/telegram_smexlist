@@ -1,4 +1,4 @@
-iimport sqlite3
+import sqlite3
 from aiogram.utils.markdown import text
 
 # Creating table
