@@ -1,4 +1,4 @@
-import sqlite3
+iimport sqlite3
 from aiogram.utils.markdown import text
 
 # Creating table
@@ -11,22 +11,23 @@ def init_db():
                 author TEXT,
                 question TEXT
                 )''')
-    # quests, scores separator - <,>, players separator - <!>
+    # players_id, quests, scores sep - <,>, players sep - <!>, ans sep - <|>
     cursor.execute('''CREATE TABLE IF NOT EXISTS rooms(
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 key TEXT,
+                players_id TEXT,
                 players TEXT,
-                ready INT,
-                quests TEXT,
-                scores TEXT
+                quests TEXT
                 )''')
-    # players separator - <!>, answer separator - <|>
-    cursor.execute('''CREATE TABLE IF NOT EXISTS answers(
+
+# all columns have single data
+    cursor.execute('''CREATE TABLE IF NOT EXISTS player(
                 key TEXT,
-                player TEXT,
-                answer INT,
-                quest INT,
-                points TEXT DEFAULT 0,0
+                id INT,
+                nickname TEXT,
+                quest_id INT,
+                answer TEXT,
+                points INT
                 )''')
 
 
