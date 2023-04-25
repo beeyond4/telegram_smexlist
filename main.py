@@ -97,8 +97,13 @@ async def process_questview_command(message: types.Message):
         mtext = message.text.partition(' ')[2]
         room = get_table('rooms', ['key', mtext])[0]
 
-        if member["user"]["username"] in room[3].split('!'):
-            await message.reply("Вы уже подключены к этой игре")
+        #if member["user"]["username"] in room[3].split('!'):
+            #await message.reply("Вы уже подключены к этой игре")
+            #return
+
+        player_id = get_table('player', ['id', member["user"]["id"]])[0][1]
+        if player_id is not None:
+            await message.reply("Вы уже подключены к комнате")
             return
 
         load_db('player', {'key' : mtext,
@@ -112,10 +117,10 @@ async def process_questview_command(message: types.Message):
                            'players' : players
                          }, str(room[0]))
 
-        msg = text(bold('Вы успешно подключились к комнате'),
-                   text('Другие игроки:',
-                   italic(", ".join(room[3].split('!')))), sep='\n')
-        await message.reply(msg, parse_mode=ParseMode.MARKDOWN)
+        msg = text('Вы успешно подключились к комнате',
+                   'Другие игроки:',
+                   ", ".join(room[3].split('!')), sep='\n')
+        await message.reply(msg)
         # slots - количество слотов в комнате (в дальнейшем будет указываться создателем)
         slots = 4
         if len(players.split('!')) == slots:
@@ -135,7 +140,7 @@ async def process_questview_command(message: types.Message):
             shuffle(quest_text)
             ids = ids.split(',')
             for i in range(len(ids)):
-                msg = text(bold("Продолжи фразу:"), italic(quest_text[i][1]), sep='\n')
+                msg = text(bold("Продолжи фразу:"), quest_text[i][1], sep='\n')
                 await bot.send_message(ids[i] , msg, parse_mode=ParseMode.MARKDOWN)
                 edit_db('player', {'quest_id' : quest_text[i][0]}, str(ids[i]))
 
@@ -159,10 +164,14 @@ async def process_questview_command(message: types.Message):
 @dp.message_handler(commands=['play'])
 async def process_startgame_command(message: types.Message):
     try:
-        # Get data stage
         key = message.text.partition(' ')[2]
         room = get_table('rooms', ['key', key])[0]
         stats = get_table('player', ['key', key])
+
+        if len(stats) < 4:
+            await message.reply('В комнате недостаточно игроков')
+            return
+
         players = room[3].split('!')
         quests = room[4].split(',')
         # Check answers and group by questions
@@ -176,11 +185,10 @@ async def process_startgame_command(message: types.Message):
             except:
                 answers[player[3]] = [ [player[4], [ player[1], player[2] ]] ]
 
-        msg = text(text(bold('Поехали'),'!',sep=''),
+        msg = text(text('Поехали','!',sep=''),
                     'В игре участвуют:',
-                    italic(", ".join(players)), sep='\n')
-        await bot.send_message(message.chat.id, msg,
-        parse_mode=ParseMode.MARKDOWN)
+                    ", ".join(players), sep='\n')
+        await bot.send_message(message.chat.id, msg)
         await sleep(5)
 
         # Здесь нужно отсортировать ответы игроков так, чтобы
@@ -201,10 +209,8 @@ async def process_startgame_command(message: types.Message):
         stats = get_table('player', ['key', key])
         points = [int(0 if point[5] is None else point[5]) for point in stats]
         winner = stats[points.index(max(points))][2]
-        msg = text(text(bold('Игра окончена'),'!',sep=''),
-                        'Победитель:', winner, sep='\n')
-        await bot.send_message(message.chat.id, msg,
-        parse_mode=ParseMode.MARKDOWN)
+        msg = text('Игра окончена!', 'Победитель:', winner, sep='\n')
+        await bot.send_message(message.chat.id, msg)
 
         # Stage Clear <player> and <room> table
         # Deleting game session
@@ -243,9 +249,16 @@ async def process_callback_button1(callback_query: types.CallbackQuery):
 # ловит все сообщения боту, записывает их как ответ к игре
 @dp.message_handler()
 async def get_answer(message: types.Message):
-    answer = message.text
-    id = message.from_user.id
-    edit_db('player', {'answer' : answer}, str(id))
+    try:
+        id = message.from_user.id
+        saved_answer = get_table('player', ['id', id])[0][4]
+
+        if saved_answer is not None:
+            return
+        answer = message.text
+        edit_db('player', {'answer' : answer}, str(id))
+    except:
+        return
 
 
 if __name__ == '__main__':
