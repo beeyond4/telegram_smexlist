@@ -11,7 +11,7 @@ def init_db():
                 author TEXT,
                 question TEXT
                 )''')
-    # players_id, quests, scores sep - <,>, players sep - <!>, ans sep - <|>
+    # players_id, quests, scores sep - <,>, players sep - <!>
     cursor.execute('''CREATE TABLE IF NOT EXISTS rooms(
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 key TEXT,
