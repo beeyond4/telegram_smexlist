@@ -6,21 +6,14 @@ def init_db():
     conn = sqlite3.connect("my.db")
     cursor = conn.cursor()
 
+    # All columns have single data
     cursor.execute('''CREATE TABLE IF NOT EXISTS questions(
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 author TEXT,
                 question TEXT
                 )''')
-    # players_id, quests, scores sep - <,>, players sep - <!>
-    cursor.execute('''CREATE TABLE IF NOT EXISTS rooms(
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                key TEXT,
-                players_id TEXT,
-                players TEXT,
-                quests TEXT
-                )''')
 
-# all columns have single data
+
     cursor.execute('''CREATE TABLE IF NOT EXISTS player(
                 key TEXT,
                 id INT,
