@@ -1,11 +1,14 @@
 from aiogram import Dispatcher, Bot, types, executor
+from aiogram.dispatcher import FSMContext
 from aiogram.types import ParseMode
 from aiogram.utils.markdown import text, bold, italic, code, pre
+from aiogram.dispatcher.filters.state import State, StatesGroup
 
 from random import choices, shuffle
 
 from asyncio import sleep
 
+from states import *
 from init_db import *
 from config import TOKEN
 from cipher import *
@@ -14,9 +17,9 @@ import keyboards as kb
 bot = Bot(token=TOKEN)
 dp = Dispatcher(bot)
 
-# Количество слотов в комнате
+# slots - number of slots in the room
 global slots
-slots = 4
+slots = 6
 
 @dp.message_handler(commands=['start'])
 async def process_start_command(message: types.Message):
@@ -26,24 +29,42 @@ async def process_start_command(message: types.Message):
 
 @dp.message_handler(commands=['help'])
 async def process_help_command(message: types.Message):
-    msg = text(bold('Я могу ответить на следующие команды:'),
-               '/loadquestion', '/questions', '/remove', sep='\n')
+    msg = text(bold('Узнать побольше обо мне:'),
+          text('Как играть -', code('/howtoplay')),
+          text('Как добавить свой вопрос в игру -', code('/questbasehelp')), sep='\n')
+    await message.reply(msg, parse_mode=ParseMode.MARKDOWN)
+
+
+@dp.message_handler(commands=['howtoplay'])
+async def process_help_command(message: types.Message):
+    msg = text(bold('Вcё что тебе нужно, чтобы поиграть:'),
+          text('Чтобы создать комнату, введи -', code('/create')),
+          text('Подключится к игре, -', code('/connect код')),
+          text('Запустить игру в групповом чате, -', code('/play код')), sep='\n')
+    await message.reply(msg, parse_mode=ParseMode.MARKDOWN)
+
+
+@dp.message_handler(commands=['questbasehelp'])
+async def process_help_command(message: types.Message):
+    msg = text(bold('Хочешь улучшить базу вопросов?'),
+          ('Тогда эти команды тебе помогут в этом:'),
+          text('Посмотреть весь список вопросов, -', code('/questions')),
+          text('Загрузить новый вопрос, -', code('/loadquestion Твой вопрос')),
+          text('Удалить вопрос, -', code('/remove айди вопроса')), sep='\n')
     await message.reply(msg, parse_mode=ParseMode.MARKDOWN)
 
 
 @dp.message_handler(commands=['loadquestion'])
 async def process_loadquest_command(message: types.Message):
     try:
-        member = await bot.get_chat_member(message.chat.id, message.from_user.id)
-        mtext = message.text.partition(' ')[2]
-        load_db('questions', {'author' : member["user"]["username"],
-                              'question' : mtext
-                             })
-        await message.reply(mtext + '\nУспешно записан!')
+        question = message.text.partition(' ')[2]
+        load_db('questions', {'author' : message.from_user.username,
+                            'question' : question})
+        await message.reply(text('Отлично! Вопрос', message.text,
+                            'Успешно сохранён'), sep='\n')
     except:
         await message.reply('Ошибка!\n'
-                            'Вопрос не записан, '
-                            'проверьте корректность введённой команды.')
+                            'Не удалось выполнить команду')
 
 
 @dp.message_handler(commands=['questions'])
@@ -85,11 +106,7 @@ async def process_questview_command(message: types.Message):
         await message.reply('Ошибка!\n'
                             'Не удалось создать комнату.')
 
-# Делим нацело кол-во игроков на 2, находим остаток от деления
-# Если остаток 0, созаём строку в answers с двумя последними игроками
-# Если 1, то скип
 
-# Целая часть от деления - это quest_number
 @dp.message_handler(commands=['connect'])
 async def process_questview_command(message: types.Message):
     try:
@@ -116,38 +133,28 @@ async def process_questview_command(message: types.Message):
                    'Другие игроки:',
                    ", ".join([p[2] for p in room]), sep='\n')
             await message.reply(msg)
-            # slots - количество слотов в комнате (в дальнейшем будет указываться создателем)
+
             room = get_table('player', ['key', mtext])
             if len(room) == slots:
                 questions = get_table('questions')
 
                 for _ in range(slots // 2):
                     full_quests = choices(list(questions), k = slots // 2)
-
+                # doubleing and shuffleing quests list
                 ranger = list(full_quests)
                 for q in ranger:
                     full_quests.append(q)
                 shuffle(full_quests)
+                # Sending questions to all players
                 for i in range(len(room)):
                     msg = text(bold("Продолжи фразу:"), full_quests[i][2], sep='\n')
                     await bot.send_message(room[i][1] , msg, parse_mode=ParseMode.MARKDOWN)
                     edit_db('player', {'quest_id' : full_quests[i][0]}, str(room[i][1]))
-
-        # ✓ Как только игроки набрались (в табл player
-        # будут заполнены первые 3 колонки),
-        # ✓ Заполнится в табл rooms 2 случайных вопроса (n/2)
-        # ✓ Первый вопрос получат 2 случайных игрока, второй - остальные
-        # ✓ Номера вопросов занесутся в табл player
-        # ✓ Сработает рассылка с просьбой продолжить фразу
-        # ✓ Первое сообщение игрока после рассылки будет записано
-        # в табл как answer
-
     except:
         await message.reply('Ошибка!\n'
                             'Не удалось подключиться к комнате.')
 
 
-# Необходимо полностью переработать, отказаться от таблицы answers
 @dp.message_handler(commands=['play'])
 async def process_startgame_command(message: types.Message):
     try:
@@ -231,3 +238,4 @@ async def get_answer(message: types.Message):
 
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)
+    
