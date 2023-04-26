@@ -4,12 +4,13 @@ from aiogram.types import ReplyKeyboardRemove, \
 
 
 button_help = KeyboardButton('/help')
-button_questions = KeyboardButton('/questions')
-button_create = KeyboardButton('/create')
+button_howtoplay = KeyboardButton('/howtoplay')
+button_questbasehelp = KeyboardButton('/questbasehelp')
+
 
 greet_kb = ReplyKeyboardMarkup(resize_keyboard=True).add(button_help,\
-                                                        button_questions,\
-                                                        button_create)
+                                                        button_howtoplay,\
+                                                        button_questbasehelp)
 
 
 def generate_buttons(answer1, answer2):
