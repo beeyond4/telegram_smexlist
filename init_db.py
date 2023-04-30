@@ -24,6 +24,12 @@ def init_db():
                 )''')
 
 
+    cursor.execute('''CREATE TABLE IF NOT EXISTS votes(
+                key TEXT,
+                id INT
+                )''')
+
+
     conn.commit()
 
 # Loading data into a table
@@ -83,7 +89,3 @@ def get_table(name, target=False):
 
 def main():
     init_db()
-
-
-if __name__ == '__main__':
-    main()
